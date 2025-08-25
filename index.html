@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"> <!-- Set language to Traditional Chinese -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dolch 高頻詞拼讀表</title> <!-- Changed overall title -->
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Noto Sans TC font from Google Fonts -->
+    <!-- Also include Noto Sans for better IPA rendering -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Noto Sans TC", sans-serif; /* Use Noto Sans TC for consistent Chinese font */
+            background-color: #f0f8ff; /* 淺藍白色背景 (更柔和) */
+            color: #475569; /* 深藍灰色文字 (柔和) */
+            font-size: 16px; /* Base font size for better mobile readability */
+            /* Body itself will handle the main scroll now as header is not sticky */
+        }
+        /* The word-item styles remain the same for individual word cards */
+        .word-item {
+            display: flex;
+            flex-direction: column; /* Stack word and IPA vertically */
+            align-items: flex-start; /* Align text to the left */
+            justify-content: space-between;
+            background-color: #ffffff;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem; /* 圓角更明顯 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); /* 陰影更明顯 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .word-item-content {
+            display: flex;
+            flex-direction: column; /* Stack English, Chinese, IPA vertically */
+            align-items: flex-start;
+            width: 100%;
+            margin-bottom: 0.5rem; /* Space between word/IPA/translation and button */
+        }
+        .word-text {
+            font-size: 1.25rem; /* text-xl - Increased for better mobile visibility */
+            font-weight: 500; /* medium */
+            color: #1a202c; /* Darker for primary word */
+            margin-bottom: 0.25rem;
+        }
+        .translation-text {
+            font-size: 1rem; /* text-base - Increased */
+            color: #6b7280; /* Gray for translation */
+            margin-bottom: 0.25rem;
+        }
+        .ipa-text {
+            font-size: 1.125rem; /* text-lg - Increased */
+            color: #4a5568; /* Slightly darker gray for IPA */
+            margin-top: 0.25rem;
+            font-weight: 500; /* Make IPA slightly bolder */
+            font-family: "Noto Sans", sans-serif; /* Explicitly use Noto Sans for IPA for better glyph support */
+        }
+        .word-item:hover {
+            transform: translateY(-3px); /* 輕微上浮效果 */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+        .play-button {
+            background-color: #60a5fa; /* 柔和藍色 (blue-400) */
+            color: white;
+            padding: 0.5rem 0.75rem; /* Adjusted padding for icon-only button */
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center icon */
+            gap: 0.5rem;
+            margin-left: auto; /* Push button to the right */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .play-button:hover {
+            background-color: #3b82f6; /* 柔和藍色 (blue-500) */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .play-button:active {
+            transform: translateY(0);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .active-tab {
+            background-color: #e0f2fe; /* 淺藍色 100 */
+            color: #1e40af; /* 深藍色 800 */
+            border-bottom: 2px solid #60a5fa; /* 柔和藍色 */
+            font-weight: 600; /* Slightly bolder for active tab */
+        }
+        /* 自訂捲軸樣式，提升美觀度 */
+        /* Apply to the body for the main page scroll */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        body::-webkit-scrollbar-track {
+            background: #f1f5f9; /* 板岩色 100 */
+            border-radius: 10px;
+        }
+        body::-webkit-scrollbar-thumb {
+            background: #aab8c9; /* 更柔和的藍灰色 */
+            border-radius: 10px;
+        }
+        body::-webkit-scrollbar-thumb:hover {
+            background: #7a8ba3; /* 深一點的藍灰色 */
+        }
+
+        /* Styles for inner scrollable components if their content overflows */
+        .inner-scroll-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        .inner-scroll-area::-webkit-scrollbar-track {
+            background: #e2e8f0; /* 淺灰色 */
+            border-radius: 10px;
+        }
+        .inner-scroll-area::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* 中灰色 */
+            border-radius: 10px;
+        }
+        .inner-scroll-area::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* 深灰色 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-gradient-to-r from-blue-400 to-blue-600 text-white p-4 shadow-lg"> <!-- Removed sticky, top-0, z-10 for overall page scroll -->
+        <h1 class="text-3xl font-bold text-center">Dolch 高頻詞拼讀表</h1>
+        <p class="text-center text-base mt-1">點擊拼寫模式以探索單字並聆聽其發音！</p>
+
+        <div class="bg-blue-100 text-blue-700 p-3 mt-4 mx-auto max-w-2xl rounded-md shadow-sm border-l-4 border-blue-300">
+            <p class="mb-1 text-base">Dolch 高頻詞字表涵蓋 220 個常用英語單字，有助於提高【閱讀流暢度】。</p>
+            <p class="mb-1 text-base">本表按【拼讀規則】，分列出不規則和各種拼讀模式單字。</p>
+            <p class="mb-1 text-base">建議【同類型集中練習】，以加強學習效果。</p>
+            <p class="text-sm text-blue-600">資料來源：<a href="https://files.readinguniverse.org/PDFs/Dolch-Word-List-by-Phonics-Spelling-Pattern-1.pdf" target="_blank" class="text-blue-600 hover:underline">ReadingUniverse.org - Dolch Word List by Phonics Spelling Pattern PDF</a></p>
+        </div>
+    </header>
+
+    <!-- Main content area, now allows body to scroll -->
+    <div class="flex flex-1">
+        <!-- 側邊欄導航 -->
+        <nav class="w-[40%] max-w-80 bg-gray-100 p-4 border-r border-gray-200 overflow-y-auto inner-scroll-area"> <!-- Added max-w-80 for responsive width -->
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">拼寫模式</h2>
+            <ul id="category-list">
+                <!-- 類別將在此處動態載入 -->
+            </ul>
+        </nav>
+
+        <!-- 主內容區 -->
+        <main id="main" class="flex-1 p-6 overflow-y-auto inner-scroll-area"> <!-- Added id="main" and overflow-y-auto for internal scrolling -->
+            <h2 id="current-category-title" class="text-2xl font-bold mb-6 text-blue-700">請選擇一個拼寫模式</h2>
+
+            <div id="word-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 單字將在此處動態載入 -->
+                <div class="word-item col-span-full text-center text-gray-500">
+                    <p>請從左側邊欄選擇一個拼寫模式以查看單字。</p>
+                </div>
+            </div>
+            <div id="message-box" class="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-lg shadow-xl hidden"></div>
+            <p class="text-base text-gray-500 mt-6">
+                音標指南：此網頁使用美式發音的 IPA 音標。
+                詳情請參考：<a href="https://christinayu_english.rakosell.com/zh/page/american-ipa-guide" target="_blank" class="text-blue-600 hover:underline">美式英語 IPA 國際音標指南</a>
+            </p>
+        </main>
+    </div>
+
+    <script type="module">
+        // Function to show custom message box
+        function showMessageBox(message, isError = false) {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = message;
+            if (isError) {
+                msgBox.classList.remove('bg-green-500');
+                msgBox.classList.add('bg-red-500');
+            } else {
+                msgBox.classList.remove('bg-red-500');
+                msgBox.classList.add('bg-green-500');
+            }
+            msgBox.classList.remove('hidden');
+            setTimeout(() => {
+                msgBox.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Simple IPA generation function
+        function getIpaForWord(word) {
+            const lowerWord = word.toLowerCase();
+            switch (lowerWord) {
+                // Irregular Dolch Words
+                case "again": return "/əˈɡɛn/";
+                case "carry": return "/ˈkæri/";
+                case "from": return "/frʌm/";
+                case "only": return "/ˈoʊnli/";
+                case "today": return "/təˈdeɪ/";
+                case "very": return "/ˈvɛri/";
+                case "what": return "/wʌt/";
+                case "your": return "/jʊr/";
+                case "because": return "/bɪˈkʌz/";
+                case "does": return "/dʌz/";
+                case "goes": return "/ɡoʊz/";
+                case "please": return "/pliz/";
+                case "together": return "/təˈɡɛðɚ/";
+                case "walk": return "/wɔk/";
+                case "who": return "/hu/";
+                case "been": return "/bɪn/";
+                case "don't": return "/doʊnt/";
+                case "laugh": return "/læf/";
+                case "said": return "/sɛd/";
+                case "two": return "/tu/";
+                case "warm": return "/wɔrm/";
+                case "work": return "/wɝk/";
+                case "buy": return "/baɪ/";
+                case "four": return "/fɔr/";
+                case "of": return "/ʌv/";
+                case "their": return "/ðɛr/";
+                case "use": return "/juz/";
+                case "was": return "/wʌz/";
+                case "you": return "/ju/";
+                case "good-bye": return "/ˌɡʊdˈbaɪ/";
+
+                // Common Irregular Pattern words
+                case "has": return "/hæz/";
+                case "is": return "/ɪz/";
+                case "as": return "/æz/";
+                case "his": return "/hɪz/";
+                case "have": return "/hæv/";
+                case "give": return "/ɡɪv/";
+                case "live": return "/lɪv/";
+                case "some": return "/sʌm/";
+                case "come": return "/kʌm/";
+                case "done": return "/dʌn/";
+                case "to": return "/tu/";
+                case "do": return "/du/";
+                case "into": return "/ˈɪntu/";
+                case "where": return "/wɛr/";
+                case "there": return "/ðɛr/";
+                case "these": return "/ðiz/";
+                case "those": return "/ðoʊz/";
+                case "all": return "/ɔl/";
+                case "call": return "/kɔl/";
+                case "fall": return "/fɔl/";
+                case "small": return "/smɔl/";
+                case "ball": return "/bɔl/";
+                case "could": return "/kʊd/";
+                case "would": return "/wʊd/";
+                case "were": return "/wɝ/";
+                case "are": return "/ɑr/";
+                case "old": return "/oʊld/";
+                case "cold": return "/koʊld/";
+                case "told": return "/toʊld/";
+                case "hold": return "/hoʊld/";
+                case "both": return "/boʊθ/";
+                case "find": return "/faɪnd/";
+                case "kind": return "/kaɪnd/";
+                case "once": return "/wʌns/";
+                case "one": return "/wʌn/";
+                case "want": return "/wɑnt/";
+                case "wash": return "/wɑʃ/";
+                case "any": return "/ˈɛni/";
+                case "many": return "/ˈmɛni/";
+                case "head": return "/hɛd/";
+                case "bread": return "/brɛd/";
+                case "door": return "/dɔr/";
+                case "floor": return "/flɔr/";
+                case "put": return "/pʊt/";
+                case "full": return "/fʊl/";
+                case "pull": return "/pʊl/";
+
+
+                // Closed-Syllable Words / Short Vowels
+                case "am": return "/æm/";
+                case "an": return "/æn/";
+                case "and": return "/ænd/";
+                case "at": return "/æt/";
+                case "can": return "/kæn/";
+                case "had": return "/hæd/";
+                case "ran": return "/ræn/";
+                case "cat": return "/kæt/";
+                case "man": return "/mæn/";
+                case "get": return "/ɡɛt/";
+                case "let": return "/lɛt/";
+                case "red": return "/rɛd/";
+                case "ten": return "/tɛn/";
+                case "yes": return "/jɛs/";
+                case "bed": return "/bɛd/";
+                case "egg": return "/ɛɡ/";
+                case "leg": return "/lɛɡ/";
+                case "men": return "/mɛn/";
+                case "big": return "/bɪɡ/";
+                case "did": return "/dɪd/";
+                case "him": return "/hɪm/";
+                case "if": return "/ɪf/";
+                case "in": return "/ɪn/";
+                case "it": return "/ɪt/";
+                case "sit": return "/sɪt/";
+                case "six": return "/sɪks/";
+                case "pig": return "/pɪɡ/";
+                case "got": return "/ɡɑt/";
+                case "hot": return "/hɑt/";
+                case "not": return "/nɑt/";
+                case "on": return "/ɑn/";
+                case "box": return "/bɑks/";
+                case "dog": return "/dɑɡ/";
+                case "top": return "/tɑp/";
+                case "but": return "/bʌt/";
+                case "cut": return "/kʌt/";
+                case "run": return "/rʌn/";
+                case "up": return "/ʌp/";
+                case "us": return "/ʌs/";
+                case "sun": return "/sʌn/";
+                case "seven": return "/ˈsɛvən/";
+                case "upon": return "/əˈpɑn/";
+                case "rabbit": return "/ˈræbɪt/";
+                case "robin": return "/ˈrɑbɪn/";
+
+                // Double Consonant Pattern - FLOSS(Z)
+                case "off": return "/ɔf/";
+                case "tell": return "/tɛl/";
+                case "well": return "/wɛl/";
+                case "will": return "/wɪl/";
+                case "bell": return "/bɛl/";
+                case "doll": return "/dɑl/";
+                case "hill": return "/hɪl/";
+
+                // Double Letter Consonants
+                case "shall": return "/ʃæl/";
+                case "wish": return "/wɪʃ/";
+                case "fish": return "/fɪʃ/";
+                case "much": return "/mʌtʃ/";
+                case "chicken": return "/ˈtʃɪkən/";
+                case "that": return "/ðæt/";
+                case "them": return "/ðɛm/";
+                case "then": return "/ðɛn/";
+                case "this": return "/ðɪs/";
+                case "with": return "/wɪθ/";
+                case "when": return "/wɛn/";
+                case "which": return "/wɪtʃ/";
+                case "sing": return "/sɪŋ/";
+                case "long": return "/lɔŋ/";
+                case "ring": return "/rɪŋ/";
+                case "song": return "/sɔŋ/";
+                case "thing": return "/θɪŋ/";
+                case "pick": return "/pɪk/";
+                case "duck": return "/dʌk/";
+
+                // Consonant Blends
+                case "best": return "/bɛst/";
+                case "nest": return "/nɛst/";
+                case "fast": return "/fæst/";
+                case "just": return "/dʒʌst/";
+                case "must": return "/mʌst/";
+                case "jump": return "/dʒʌmp/";
+                case "went": return "/wɛnt/";
+                case "ask": return "/æsk/";
+                case "thank": return "/θæŋk/";
+                case "think": return "/θɪŋk/";
+                case "hand": return "/hænd/";
+                case "wind": return "/wɪnd/"; // as in 'wind up'
+                case "milk": return "/mɪlk/";
+                case "help": return "/hɛlp/";
+                case "black": return "/blæk/";
+                case "bring": return "/brɪŋ/";
+                case "drink": return "/drɪŋk/";
+                case "stop": return "/stɑp/";
+                case "stick": return "/stɪk/";
+                case "grass": return "/ɡræs/";
+
+                // Suffixes
+                case "its": return "/ɪts/";
+                case "going": return "/ˈɡoʊɪŋ/";
+                case "always": return "/ˈɔlweɪz/";
+
+                // R-Controlled Vowels
+                case "car": return "/kɑr/";
+                case "far": return "/fɑr/";
+                case "farm": return "/fɑrm/";
+                case "farmer": return "/ˈfɑrmɚ/";
+                case "start": return "/stɑrt/";
+                case "garden": return "/ˈɡɑrdən/";
+                case "or": return "/ɔr/";
+                case "for": return "/fɔr/";
+                case "corn": return "/kɔrn/";
+                case "morning": return "/ˈmɔrnɪŋ/";
+                case "girl": return "/ɡɝl/";
+                case "bird": return "/bɝd/";
+                case "first": return "/fɝst/";
+                case "squirrel": return "/ˈskwɝəl/";
+                case "her": return "/hɝ/";
+                case "hurt": return "/hɝt/";
+                case "sister": return "/ˈsɪstɚ/";
+                case "mother": return "/ˈmʌðɚ/";
+                case "brother": return "/ˈbrʌðɚ/";
+                case "letter": return "/ˈlɛtɚ/";
+                case "paper": return "/ˈpeɪpɚ/";
+                case "under": return "/ˈʌndɚ/";
+                case "after": return "/ˈæftɚ/";
+                case "better": return "/ˈbɛtɚ/";
+                case "never": return "/ˈnɛvɚ/";
+
+                // Open Syllables
+                case "a": return "/eɪ ; ə/";
+                case "i": return "/aɪ/";
+                case "be": return "/bi/";
+                case "he": return "/hi/";
+                case "me": return "/mi/";
+                case "she": return "/ʃi/";
+                case "the": return "/ði ; ðə/";
+                case "we": return "/wi/";
+                case "no": return "/noʊ/";
+                case "go": return "/ɡoʊ/";
+                case "so": return "/soʊ/";
+                case "open": return "/ˈoʊpən/";
+                case "over": return "/ˈoʊvɚ/";
+                case "by": return "/baɪ/";
+                case "my": return "/maɪ/";
+                case "fly": return "/flaɪ/";
+                case "try": return "/traɪ/";
+                case "why": return "/waɪ/";
+                case "myself": return "/maɪˈsɛlf/";
+                case "funny": return "/ˈfʌni/";
+                case "every": return "/ˈɛvri/";
+                case "kitty": return "/ˈkɪti/";
+                case "pretty": return "/ˈprɪti/";
+                case "baby": return "/ˈbeɪbi/";
+                case "party": return "/ˈpɑrti/";
+
+                // Consonant '-LE'
+                case "little": return "/ˈlɪtəl/";
+                case "apple": return "/ˈæpəl/";
+                case "table": return "/ˈteɪbəl/";
+
+                // Silent E
+                case "ate": return "/eɪt/";
+                case "came": return "/keɪm/";
+                case "game": return "/ɡeɪm/";
+                case "name": return "/neɪm/";
+                case "gave": return "/ɡeɪv/";
+                case "made": return "/meɪd/";
+                case "make": return "/meɪk/";
+                case "take": return "/teɪk/";
+                case "cake": return "/keɪk/";
+                case "here": return "/hɪr/";
+                case "five": return "/faɪv/";
+                case "like": return "/laɪk/";
+                case "ride": return "/raɪd/";
+                case "white": return "/waɪt/";
+                case "fire": return "/faɪr/";
+                case "time": return "/taɪm/";
+                case "before": return "/bɪˈfɔr/";
+                case "home": return "/hoʊm/";
+
+                // Vowel Teams
+                case "may": return "/meɪ/";
+                case "day": return "/deɪ/";
+                case "say": return "/seɪ/";
+                case "way": return "/weɪ/";
+                case "play": return "/pleɪ/";
+                case "away": return "/əˈweɪ/";
+                case "birthday": return "/ˈbɝθˌdeɪ/";
+                case "rain": return "/reɪn/";
+                case "chair": return "/tʃɛr/";
+                case "eight": return "/eɪt/";
+                case "see": return "/si/";
+                case "feet": return "/fit/";
+                case "keep": return "/kip/";
+                case "seed": return "/sid/";
+                case "sheep": return "/ʃip/";
+                case "tree": return "/tri/";
+                case "they": return "/ðeɪ/";
+                case "sleep": return "/slip/";
+                case "green": return "/ɡrin/";
+                case "street": return "/strit/";
+                case "clean": return "/klin/";
+                case "eat": return "/it/";
+                case "read": return "/rid/";
+                case "money": return "/ˈmʌni/";
+                case "light": return "/laɪt/";
+                case "right": return "/raɪt/";
+                case "night": return "/naɪt/";
+                case "own": return "/oʊn/";
+                case "show": return "/ʃoʊ/";
+                case "grow": return "/ɡroʊ/";
+                case "snow": return "/snoʊ/";
+                case "yellow": return "/ˈyɛloʊ/";
+                case "window": return "/ˈwɪndoʊ/";
+                case "boat": return "/boʊt/";
+                case "coat": return "/koʊt/";
+                case "soon": return "/sun/";
+                case "too": return "/tu/";
+                case "school": return "/skul/";
+                case "blue": return "/blu/";
+                case "new": return "/nu/";
+                case "good": return "/ɡʊd/";
+                case "look": return "/lʊk/";
+                case "wood": return "/wʊd/";
+                case "saw": return "/sɔ/";
+                case "draw": return "/drɔ/";
+
+                // Diphthongs
+                case "how": return "/haʊ/";
+                case "now": return "/naʊ/";
+                case "cow": return "/kaʊ/";
+                case "down": return "/daʊn/";
+                case "flower": return "/ˈflaʊɚ/";
+                case "brown": return "/braʊn/";
+                case "our": return "/aʊr/";
+                case "out": return "/aʊt/";
+                case "about": return "/əˈbaʊt/";
+                case "round": return "/raʊnd/";
+                case "around": return "/əˈraʊnd/";
+                case "found": return "/faʊnd/";
+                case "ground": return "/ɡraʊnd/";
+                case "boy": return "/bɔɪ/";
+                case "toy": return "/tɔɪ/";
+
+                // Silent Consonant Letters
+                case "write": return "/raɪt/";
+                case "know": return "/noʊ/";
+
+                default:
+                    return `/${lowerWord}/`;
+            }
+        }
+
+        // Chinese translations for Dolch words
+        // IMPORTANT: Ensure this object is defined before it's used by functions like createWordElement
+        const wordTranslations = {
+            "again": "再次", "carry": "攜帶", "from": "從", "only": "僅僅", "today": "今天", "very": "非常", "what": "什麼", "your": "你的",
+            "because": "因為", "does": "做 (第三人稱單數)", "goes": "去 (第三人稱單數)", "please": "請", "together": "一起", "walk": "走路", "who": "誰",
+            "been": "是 (完成式)", "don't": "不", "laugh": "笑", "said": "說 (過去式)", "two": "二", "warm": "溫暖的", "work": "工作",
+            "buy": "買", "four": "四", "of": "的", "their": "他們的", "use": "使用", "was": "是 (單數過去式)",
+            "you": "你/你們",
+            "i": "我", 
+            "has": "有 (第三人稱單數)", "is": "是 (第三人稱單數)", "as": "作為/像", "his": "他的",
+            "have": "有", "give": "給予", "live": "居住",
+            "some": "一些", "come": "來", "done": "做完",
+            "to": "到", "do": "做", "into": "進入",
+            "where": "哪裡", "there": "那裡",
+            "these": "這些", "those": "那些",
+            "all": "所有", "call": "呼叫", "fall": "落下", "small": "小的", "ball": "球",
+            "could": "能 (過去式)", "would": "會",
+            "were": "是 (過去式)", "are": "是",
+            "old": "老的", "cold": "冷的", "told": "告訴 (過去式)", "hold": "握住", "both": "兩者",
+            "find": "找到", "kind": "種類/友善的",
+            "once": "一次", "one": "一",
+            "want": "想要", "wash": "洗",
+            "any": "任何", "many": "許多",
+            "head": "頭", "bread": "麵包",
+            "door": "門", "floor": "地板",
+            "put": "放", "full": "滿的", "pull": "拉",
+            "good-bye": "再見",
+
+            // Closed-Syllable Words / Short Vowels
+            "am": "是", "an": "一個", "and": "和", "at": "在", "can": "能", "had": "有 (過去式)", "ran": "跑 (過去式)", "cat": "貓", "man": "人",
+            "get": "得到", "let": "讓", "red": "紅色", "ten": "十", "yes": "是", "bed": "床", "egg": "蛋", "leg": "腿", "men": "男人（複數）",
+            "big": "大的", "did": "做 (過去式)", "him": "他", "if": "如果", "in": "在...裡面", "it": "它", "sit": "坐", "six": "六", "pig": "豬",
+            "got": "得到 (過去式)", "hot": "熱的", "not": "不", "on": "在...上面", "box": "盒子", "dog": "狗",
+            "top": "頂部",
+            "but": "但是", "cut": "切", "run": "跑", "up": "向上", "us": "我們", "sun": "太陽",
+            "seven": "七", "upon": "在...之上", "rabbit": "兔子", "robin": "知更鳥",
+
+            // Double Consonant Pattern - FLOSS(Z)
+            "off": "離開", "tell": "告訴", "well": "好", "will": "將會", "bell": "鈴鐺", "doll": "洋娃娃", "hill": "小山",
+
+            // Double Letter Consonants (Digraphs)
+            "shall": "將會", "wish": "希望", "fish": "魚",
+            "much": "許多", "chicken": "雞肉",
+            "that": "那個", "them": "他們", "then": "然後", "this": "這個", "with": "和...一起",
+            "when": "何時", "which": "哪一個",
+            "sing": "唱歌", "long": "長的", "ring": "戒指/鈴聲", "song": "歌曲", "thing": "事物",
+            "pick": "挑選", "duck": "鴨子",
+
+            // Consonant Blends
+            "best": "最好的", "nest": "巢", "fast": "快的", "just": "剛剛/只是", "must": "必須", "jump": "跳", "went": "去 (過去式)",
+            "ask": "問", "thank": "謝謝", "think": "思考", "hand": "手", "wind": "風 (動詞：纏繞)", "milk": "牛奶", "help": "幫助",
+            "black": "黑色", "bring": "帶來", "drink": "喝", "stop": "停止", "stick": "棍子/黏貼", "grass": "草",
+
+            // Suffixes
+            "its": "它的", "going": "去 (現在分詞)", "always": "總是",
+
+            // R-Controlled Vowels
+            "car": "汽車", "far": "遠的", "farm": "農場", "farmer": "農夫", "start": "開始", "garden": "花園",
+            "or": "或者", "for": "為了", "corn": "玉米", "morning": "早上",
+            "girl": "女孩", "bird": "鳥", "first": "第一", "squirrel": "松鼠",
+            "her": "她的", "hurt": "受傷", "sister": "姐妹",
+            "mother": "母親", "brother": "兄弟",
+            "letter": "信/字母", "paper": "紙", "under": "在...下面", "after": "在...之後", "better": "更好", "never": "從不",
+
+            // Open Syllables
+            "a": "一個", "be": "是", "he": "他", "me": "我", "she": "她", "the": "這/那個", "we": "我們",
+            "no": "不", "go": "去", "so": "所以", "open": "打開", "over": "結束/在...上方",
+            "by": "由/在...旁邊", "my": "我的", "fly": "飛", "try": "嘗試", "why": "為什麼", "myself": "我自己",
+            "funny": "有趣的", "every": "每個", "kitty": "小貓", "pretty": "漂亮的", "baby": "嬰兒", "party": "派對",
+
+            // Consonant '-LE'
+            "little": "小的", "apple": "蘋果", "table": "桌子",
+
+            // Silent E
+            "ate": "吃 (過去式)", "came": "來 (過去式)", "game": "遊戲",
+            "name": "名字", "gave": "給予 (過去式)", "made": "製作 (過去式)", "make": "製作", "take": "拿", "cake": "蛋糕",
+            "here": "這裡",
+            "five": "五", "like": "喜歡/像", "ride": "騎",
+            "white": "白色", "fire": "火", "time": "時間",
+            "before": "之前", "home": "家",
+
+            // Vowel Teams
+            "may": "可能", "day": "天", "say": "說", "way": "方式", "play": "玩", "away": "離開", "birthday": "生日", "rain": "雨", "chair": "椅子", "eight": "八",
+            "see": "看", "feet": "腳", "keep": "保持", "seed": "種子", "sheep": "綿羊", "tree": "樹", "they": "他們", "sleep": "睡覺", "green": "綠色", "street": "街道", "clean": "乾淨", "eat": "吃", "read": "閱讀", "money": "錢",
+            "light": "光/輕的", "right": "正確的/右邊", "night": "夜晚",
+            "own": "自己的", "show": "展示", "grow": "生長", "snow": "雪", "yellow": "黃色",
+            "window": "窗戶",
+            "boat": "船",
+            "coat": "外套",
+            "soon": "很快", "too": "也/太", "school": "學校", "blue": "藍色", "new": "新的",
+            "good": "好的", "look": "看", "wood": "木頭",
+            "saw": "看見 (過去式)/鋸子", "draw": "畫"
+        };
+
+        // Dolch words data organized by categories
+        // IMPORTANT: Ensure this object is defined before it's used by functions like loadCategories
+        const dolchWordsData = {
+            "不規則拼寫單字": { // Left column button text and right column title
+                ipa: null,
+                count: 75, // Add count for this category
+                subcategories: {
+                    "無規則單字": { ipa: null, count: 29, words: [
+                        "again", "carry", "from", "only", "today", "very", "what", "your",
+                        "because", "does", "goes", "please", "together", "walk", "who",
+                        "been", "don't", "laugh", "said", "two", "warm", "work",
+                        "buy", "four", "of", "their", "use", "was", "you"
+                    ]},
+                    "字尾 's' 發 /z/ 音": { ipa: "/z/", words: ["has", "is", "as", "his"] },
+                    "'v' 後面接 'e' (英語單字不以 'v' 結尾)": { ipa: null, words: ["have", "give", "live"] },
+                    "'o-e' 發短 'u' 音": { ipa: "/ʌ/", words: ["some", "come", "done"] },
+                    "'o' 發 /u/ 音 (如 boot)": { ipa: "/u/", words: ["to", "do", "into"] },
+                    "相同字尾的押韻單字": { ipa: null, words: ["where", "there"] },
+                    "靜音 'e' 前 's' 發 /z/ 音": { ipa: "/z/", words: ["these", "those"] },
+                    "在 -all 模式中 'a' 發 /ɔ/ 音": { ipa: "/ɔ/", words: ["all", "call", "fall", "small", "ball"] },
+                    "'oul' 發 /ʊ/ 音 (如 book)": { ipa: "/ʊ/", words: ["could", "would"] },
+                    "母音 + 'r' + 'e'": { ipa: null, words: ["were", "are"] },
+                    "VCC 和 CVCC 模式中 'o' 發長 'o' 音": { ipa: "/oʊ/", words: ["old", "cold", "told", "hold", "both"] },
+                    "CVCC 模式中 'i' 發長 'i' 音": { ipa: "/aɪ/", words: ["find", "kind"] },
+                    "意義和拼寫相似的單字": { ipa: null, words: ["once", "one"] },
+                    "'w' 後的 'a' 有時發 /ɑ/ 音": { ipa: "/ɑ/", words: ["want", "wash"] },
+                    "'u' 發 /ʊ/ 音 (如 book)": { ipa: "/ʊ/", words: ["put", "full", "pull"] },
+                    "押韻單字 - 'a' 發短 'i' 或短 'e' 音": { ipa: "/ɛ/", words: ["any", "many"] },
+                    "'ea' 發短 'e' 音": { ipa: "/ɛ/", words: ["head", "bread"] },
+                    "'oor' 發 /ɔr/ 音": { ipa: "/ɔr/", words: ["door", "floor"] }
+                }
+            },
+            "閉音節單字 / 短母音": {
+                ipa: null,
+                subcategories: {
+                    "短 'a'": { ipa: "/æ/", words: ["am", "an", "and", "at", "can", "had", "ran", "cat", "man"] },
+                    "短 'e'": { ipa: "/ɛ/", words: ["get", "let", "red", "ten", "yes", "bed", "egg", "leg", "men"] },
+                    "短 'i'": { ipa: "/ɪ/", words: ["big", "did", "him", "if", "in", "it", "sit", "six", "pig"] },
+                    "短 'o'": { ipa: "/ɑ/", words: ["got", "hot", "not", "on", "box", "dog", "top"] },
+                    "短 'u'": { ipa: "/ʌ/", words: ["but", "cut", "run", "up", "us", "sun"] },
+                    "多音節閉音節單字": { ipa: null, words: ["seven", "upon", "rabbit", "robin"] }
+                }
+            },
+            "重複子音字尾 (FLOSS-Z)": { ipa: null, words: ["off", "tell", "well", "will", "bell", "doll", "hill"] },
+            "雙字母子音 (Digraphs)": {
+                ipa: null,
+                subcategories: {
+                    "'sh'": { ipa: "/ʃ/", words: ["shall", "wish", "fish"] },
+                    "'ch'": { ipa: "/tʃ/", words: ["much", "chicken"] },
+                    "'th'": { ipa: "/θ/, /ð/", words: ["that", "them", "then", "this", "with"] }, 
+                    "'wh'": { ipa: "/w/", words: ["when", "which"] },
+                    "'-ng'": { ipa: "/ŋ/", words: ["sing", "long", "ring", "song", "thing"] },
+                    "'-ck'": { ipa: "/k/", words: ["pick", "duck"] }
+                }
+            },
+            "子音群 (Blends)": {
+                ipa: null,
+                subcategories: {
+                    "字尾子音群": {
+                        ipa: null,
+                        words: [
+                            "best", "nest", "fast", "just", "must", "jump", "went",
+                            "ask", "thank", "think", "hand", "wind", "milk", "help"
+                        ]
+                    },
+                    "字首子音群": { ipa: null, words: ["black", "bring", "drink", "stop", "stick", "grass"] }
+                }
+            },
+            "字尾後綴 (Suffixes)": { ipa: null, words: ["its", "going", "always"] },
+            "母音 + 'r'": {
+                ipa: null,
+                subcategories: {
+                    "'ar'": { ipa: "/ɑr/", words: ["car", "far", "farm", "farmer", "start", "garden"] },
+                    "'or'": { ipa: "/ɔr/", words: ["or", "for", "corn", "morning"] },
+                    "'er', 'ir', 'ur'": { 
+                        ipa: "/ɝ/, /ɚ/",
+                        words: [
+                            "girl", "bird", "first", "squirrel", "her", "hurt", "sister",
+                            "mother", "brother", "letter", "paper", "under", "after", "better", "never"
+                        ]
+                    }
+                }
+            },
+            "開音節單字": {
+                ipa: null,
+                subcategories: {
+                    "單一音素音節": { ipa: null, words: ["a", "I"] },
+                    "長 'e'": { ipa: "/i/", words: ["be", "he", "me", "she", "the", "we"] },
+                    "長 'o'": { ipa: "/oʊ/", words: ["no", "go", "so", "open", "over"] },
+                    "'y' 發 'i' 音": { ipa: "/aɪ/", words: ["by", "my", "fly", "try", "why", "myself"] },
+                    "'y' 發 'e' 音": { ipa: "/i/", words: ["funny", "every", "kitty", "pretty", "baby", "party"] }
+                }
+            },
+            "子音 '-LE'": { ipa: null, words: ["little", "apple", "table"] },
+            "長母音 + 靜音 'e'": {
+                ipa: null,
+                subcategories: {
+                    "長 'a'": { ipa: "/eɪ/", words: ["ate", "came", "game", "name", "gave", "made", "make", "take", "cake"] },
+                    "長 'e'": { ipa: "/i/", words: ["here"] },
+                    "長 'i'": { ipa: "/aɪ/", words: ["five", "like", "ride", "white", "fire", "time"] },
+                    "長 'o'": { ipa: "/oʊ/", words: ["before", "home"] }
+                }
+            },
+            "母音組合 (Vowel Teams)": {
+                ipa: null,
+                subcategories: {
+                    "長 'a'": { ipa: "/eɪ/", words: ["may", "day", "say", "way", "play", "away", "birthday", "rain", "chair", "eight"] },
+                    "長 'e'": { ipa: "/i/", words: ["see", "feet", "keep", "seed", "sheep", "tree", "they", "sleep", "green", "street", "clean", "eat", "read", "money"] },
+                    "長 'i'": { ipa: "/aɪ/", words: ["light", "right", "night"] },
+                    "長 'o'": { ipa: "/oʊ/", words: ["own", "show", "grow", "snow", "yellow", "window", "boat", "coat"] },
+                    "/u/ 音 (如 boot)": { ipa: "/u/", words: ["soon", "too", "school", "blue", "new"] },
+                    "/ʊ/ 音 (如 good)": { ipa: "/ʊ/", words: ["good", "look", "wood", "good-bye"] },
+                    "/ɔ/ 音 (如 saw)": { ipa: "/ɔ/", words: ["saw", "draw"] }
+                }
+            },
+            "雙母音 (Diphthongs)": {
+                ipa: null,
+                subcategories: {
+                    "/aʊ/ 拼寫為 'ow'": { ipa: null, words: ["how", "now", "cow", "down", "flower", "brown"] },
+                    "/aʊ/ 拼寫為 'ou'": { ipa: null, words: ["our", "out", "about", "round", "around", "found", "ground"] },
+                    "/ɔɪ/": { ipa: "/ɔɪ/", words: ["boy", "toy"] }
+                }
+            },
+            "不發音子音字母": { ipa: null, words: ["write", "know"] }
+        };
+
+
+        const categoryList = document.getElementById('category-list');
+        const currentCategoryTitle = document.getElementById('current-category-title');
+        const wordListContainer = document.getElementById('word-list');
+        // Declared main here to make it accessible to displayWords
+        let main;
+
+        // Changed from `let` to `var` to address ReferenceError on initial load
+        var currentActiveTab = null; 
+
+        // Function to dynamically load categories into the sidebar
+        function loadCategories() {
+            // Check if dolchWordsData is defined before trying to iterate
+            if (typeof dolchWordsData === 'undefined') {
+                console.error("Error: dolchWordsData is not defined. Script parsing might have failed earlier.");
+                showMessageBox("載入單字類別失敗，請檢查程式碼錯誤。", true);
+                return; // Exit function if data is not available
+            }
+
+            // Clear previous categories before loading new ones
+            categoryList.innerHTML = ''; 
+
+            for (const categoryName in dolchWordsData) {
+                const li = document.createElement('li');
+                const button = document.createElement('button');
+                let buttonText = categoryName;
+
+                // Add count to main category title if available
+                if (dolchWordsData[categoryName].count) {
+                    buttonText += `（共 ${dolchWordsData[categoryName].count} 字）`;
+                } else if (dolchWordsData[categoryName].ipa) {
+                    buttonText += ` - ${dolchWordsData[categoryName].ipa}`;
+                }
+                button.innerHTML = buttonText; // Use innerHTML to render IPA
+                button.classList.add('block', 'w-full', 'text-left', 'py-2', 'px-3', 'rounded-lg', 'text-gray-800', 'hover:bg-blue-100', 'hover:text-blue-700', 'transition-colors', 'duration-200', 'mb-2');
+                button.onclick = () => displayWords(categoryName, button);
+                li.appendChild(button);
+                categoryList.appendChild(li);
+            }
+        }
+
+        // Function to display words for a selected category
+        function displayWords(categoryName, clickedButton) {
+            // Update active tab styling
+            if (currentActiveTab) {
+                currentActiveTab.classList.remove('active-tab', 'font-semibold');
+            }
+            clickedButton.classList.add('active-tab', 'font-semibold');
+            currentActiveTab = clickedButton;
+
+            let titleText = categoryName;
+            // Add count to the main category title on the right if available
+            if (dolchWordsData[categoryName].count) {
+                titleText += `（共 ${dolchWordsData[categoryName].count} 字）`;
+            } else if (dolchWordsData[categoryName].ipa) {
+                titleText += ` - ${dolchWordsData[categoryName].ipa}`;
+            }
+            currentCategoryTitle.innerHTML = titleText;
+            wordListContainer.innerHTML = ''; // Clear previous words
+
+            const categoryData = dolchWordsData[categoryName];
+
+            // Modified to handle both direct 'words' array and 'subcategories' object
+            if (categoryData.words) { // If it's a direct list of words
+                categoryData.words.forEach(word => {
+                    wordListContainer.appendChild(createWordElement(word));
+                });
+            } else if (categoryData.subcategories) { // If it has subcategories
+                for (const subcategoryName in categoryData.subcategories) {
+                    const subcategoryData = categoryData.subcategories[subcategoryName];
+
+                    const subcategoryDiv = document.createElement('div');
+                    subcategoryDiv.classList.add('col-span-full', 'mb-4');
+                    let subcategoryTitleHtml = `<h3 class="text-xl font-medium mb-3 text-gray-600">${subcategoryName}`;
+                    
+                    // Add count to subcategory title if available
+                    if (subcategoryData.count) {
+                        subcategoryTitleHtml += `（共 ${subcategoryData.count} 字）`;
+                    } else if (subcategoryData.ipa && !subcategoryName.includes(subcategoryData.ipa)) {
+                        subcategoryTitleHtml += ` - ${subcategoryData.ipa}`;
+                    }
+                    subcategoryTitleHtml += `</h3>`;
+                    subcategoryDiv.innerHTML = subcategoryTitleHtml;
+
+
+                    const subcategoryWordsGrid = document.createElement('div');
+                    subcategoryWordsGrid.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-4', 'mb-6');
+
+                    subcategoryData.words.forEach(word => {
+                        subcategoryWordsGrid.appendChild(createWordElement(word));
+                    });
+                    subcategoryDiv.appendChild(subcategoryWordsGrid);
+                    wordListContainer.appendChild(subcategoryDiv);
+                }
+            }
+            // Scroll to top of word list when category changes
+            if (main) {
+                main.scrollTop = 0;
+            } else {
+                console.error("Error: main element not found for scrolling.");
+            }
+        }
+
+        // Function to create a word element with a play button and translation
+        function createWordElement(word) {
+            const wordDiv = document.createElement('div');
+            wordDiv.classList.add('word-item');
+            const ipa = getIpaForWord(word); // Get IPA for the word
+            // Ensure the displayed word is capitalized if it's "I"
+            const displayWord = (word.toLowerCase() === 'i') ? 'I' : word;
+            const translation = wordTranslations[word.toLowerCase()] || ""; // Get Chinese translation, empty if none
+
+            wordDiv.innerHTML = `
+                <div class="word-item-content">
+                    <span class="word-text">${displayWord} ${translation}</span>
+                    <div class="ipa-text">${ipa}</div>
+                    <button class="play-button" data-word="${word}">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.026A1 1 0 008 8v4a1 1 0 001.555.974l3.5-2a1 1 0 000-1.948l-3.5-2z" clip-rule="evenodd"></path>
+                        </svg>
+                        <!-- No Chinese text here -->
+                    </button>
+                </div>
+            `;
+            wordDiv.querySelector('.play-button').addEventListener('click', (event) => playWord(event.currentTarget));
+            return wordDiv;
+        }
+
+        // Function to play the pronunciation of a word using Web Speech API
+        async function playWord(button) {
+            const word = button.dataset.word;
+            const originalButtonContent = button.innerHTML; // Store original content (just SVG)
+            
+            // Check if Web Speech API is supported
+            if (!('speechSynthesis' in window)) {
+                showMessageBox('您的瀏覽器不支援語音合成功能。', true);
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<div class="loading-spinner"></div>'; // Show loading spinner
+
+            try {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US'; // Set language to American English
+                utterance.rate = 1.0;     // Normal speed
+                utterance.pitch = 1.0;    // Normal pitch
+
+                utterance.onend = () => {
+                    button.innerHTML = originalButtonContent; // Restore original content
+                    button.disabled = false;
+                };
+
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance error:', event.error);
+                    showMessageBox(`播放「${word}」時發生錯誤：${event.error}。請確保您的瀏覽器有設定語音輸出。`, true);
+                    button.innerHTML = originalButtonContent; // Restore original content
+                    button.disabled = false;
+                };
+
+                window.speechSynthesis.speak(utterance);
+
+            } catch (error) {
+                console.error('Error playing word with Web Speech API:', error);
+                showMessageBox(`播放「${word}」時發生錯誤。請再試一次。`, true);
+                button.innerHTML = originalButtonContent; // Restore original content
+                button.disabled = false;
+            }
+        }
+
+        // Initialize the app when the window loads
+        window.onload = function() {
+            // Assign the main element to the 'main' variable here
+            main = document.getElementById('main');
+            
+            loadCategories();
+            // Automatically select the first category for initial display
+            const firstCategoryButton = categoryList.querySelector('button');
+            if (firstCategoryButton) {
+                firstCategoryButton.click();
+            } else {
+                showMessageBox("沒有可用的單字類別。請檢查資料來源。", true);
+            }
+        };
+    </script>
+</body>
+</html>
