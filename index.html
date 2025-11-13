@@ -276,7 +276,6 @@
                 case "full": return "/fʊl/";
                 case "pull": return "/pʊl/";
 
-
                 // Closed-Syllable Words / Short Vowels
                 case "am": return "/æm/";
                 case "an": return "/æn/";
@@ -533,14 +532,13 @@
         }
 
         // Chinese translations for Dolch words
-        // IMPORTANT: Ensure this object is defined before it's used by functions like createWordElement
         const wordTranslations = {
             "again": "再次", "carry": "攜帶", "from": "從", "only": "僅僅", "today": "今天", "very": "非常", "what": "什麼", "your": "你的",
             "because": "因為", "does": "做 (第三人稱單數)", "goes": "去 (第三人稱單數)", "please": "請", "together": "一起", "walk": "走路", "who": "誰",
             "been": "是 (完成式)", "don't": "不", "laugh": "笑", "said": "說 (過去式)", "two": "二", "warm": "溫暖的", "work": "工作",
             "buy": "買", "four": "四", "of": "的", "their": "他們的", "use": "使用", "was": "是 (單數過去式)",
             "you": "你/你們",
-            "i": "我", 
+            "i": "我",
             "has": "有 (第三人稱單數)", "is": "是 (第三人稱單數)", "as": "作為/像", "his": "他的",
             "have": "有", "give": "給予", "live": "居住",
             "some": "一些", "come": "來", "done": "做完",
@@ -627,11 +625,10 @@
         };
 
         // Dolch words data organized by categories
-        // IMPORTANT: Ensure this object is defined before it's used by functions like loadCategories
         const dolchWordsData = {
-            "不規則拼寫單字": { // Left column button text and right column title
+            "不規則拼寫單字": {
                 ipa: null,
-                count: 75, // Add count for this category
+                count: 75,
                 subcategories: {
                     "無規則單字": { ipa: null, count: 29, words: [
                         "again", "carry", "from", "only", "today", "very", "what", "your",
@@ -675,7 +672,7 @@
                 subcategories: {
                     "'sh'": { ipa: "/ʃ/", words: ["shall", "wish", "fish"] },
                     "'ch'": { ipa: "/tʃ/", words: ["much", "chicken"] },
-                    "'th'": { ipa: "/θ/, /ð/", words: ["that", "them", "then", "this", "with"] }, 
+                    "'th'": { ipa: "/θ/, /ð/", words: ["that", "them", "then", "this", "with"] },
                     "'wh'": { ipa: "/w/", words: ["when", "which"] },
                     "'-ng'": { ipa: "/ŋ/", words: ["sing", "long", "ring", "song", "thing"] },
                     "'-ck'": { ipa: "/k/", words: ["pick", "duck"] }
@@ -700,7 +697,7 @@
                 subcategories: {
                     "'ar'": { ipa: "/ɑr/", words: ["car", "far", "farm", "farmer", "start", "garden"] },
                     "'or'": { ipa: "/ɔr/", words: ["or", "for", "corn", "morning"] },
-                    "'er', 'ir', 'ur'": { 
+                    "'er', 'ir', 'ur'": {
                         ipa: "/ɝ/, /ɚ/",
                         words: [
                             "girl", "bird", "first", "squirrel", "her", "hurt", "sister",
@@ -756,36 +753,30 @@
         const categoryList = document.getElementById('category-list');
         const currentCategoryTitle = document.getElementById('current-category-title');
         const wordListContainer = document.getElementById('word-list');
-        // Declared main here to make it accessible to displayWords
         let main;
+        var currentActiveTab = null;
+        let currentAudio = null; // 目前正在播放的 audio
 
-        // Changed from `let` to `var` to address ReferenceError on initial load
-        var currentActiveTab = null; 
-
-        // Function to dynamically load categories into the sidebar
         function loadCategories() {
-            // Check if dolchWordsData is defined before trying to iterate
             if (typeof dolchWordsData === 'undefined') {
                 console.error("Error: dolchWordsData is not defined. Script parsing might have failed earlier.");
                 showMessageBox("載入單字類別失敗，請檢查程式碼錯誤。", true);
-                return; // Exit function if data is not available
+                return;
             }
 
-            // Clear previous categories before loading new ones
-            categoryList.innerHTML = ''; 
+            categoryList.innerHTML = '';
 
             for (const categoryName in dolchWordsData) {
                 const li = document.createElement('li');
                 const button = document.createElement('button');
                 let buttonText = categoryName;
 
-                // Add count to main category title if available
                 if (dolchWordsData[categoryName].count) {
                     buttonText += `（共 ${dolchWordsData[categoryName].count} 字）`;
                 } else if (dolchWordsData[categoryName].ipa) {
                     buttonText += ` - ${dolchWordsData[categoryName].ipa}`;
                 }
-                button.innerHTML = buttonText; // Use innerHTML to render IPA
+                button.innerHTML = buttonText;
                 button.classList.add('block', 'w-full', 'text-left', 'py-2', 'px-3', 'rounded-lg', 'text-gray-800', 'hover:bg-blue-100', 'hover:text-blue-700', 'transition-colors', 'duration-200', 'mb-2');
                 button.onclick = () => displayWords(categoryName, button);
                 li.appendChild(button);
@@ -793,9 +784,7 @@
             }
         }
 
-        // Function to display words for a selected category
         function displayWords(categoryName, clickedButton) {
-            // Update active tab styling
             if (currentActiveTab) {
                 currentActiveTab.classList.remove('active-tab', 'font-semibold');
             }
@@ -803,31 +792,27 @@
             currentActiveTab = clickedButton;
 
             let titleText = categoryName;
-            // Add count to the main category title on the right if available
             if (dolchWordsData[categoryName].count) {
                 titleText += `（共 ${dolchWordsData[categoryName].count} 字）`;
             } else if (dolchWordsData[categoryName].ipa) {
                 titleText += ` - ${dolchWordsData[categoryName].ipa}`;
             }
             currentCategoryTitle.innerHTML = titleText;
-            wordListContainer.innerHTML = ''; // Clear previous words
+            wordListContainer.innerHTML = '';
 
             const categoryData = dolchWordsData[categoryName];
 
-            // Modified to handle both direct 'words' array and 'subcategories' object
-            if (categoryData.words) { // If it's a direct list of words
+            if (categoryData.words) {
                 categoryData.words.forEach(word => {
                     wordListContainer.appendChild(createWordElement(word));
                 });
-            } else if (categoryData.subcategories) { // If it has subcategories
+            } else if (categoryData.subcategories) {
                 for (const subcategoryName in categoryData.subcategories) {
                     const subcategoryData = categoryData.subcategories[subcategoryName];
 
                     const subcategoryDiv = document.createElement('div');
                     subcategoryDiv.classList.add('col-span-full', 'mb-4');
                     let subcategoryTitleHtml = `<h3 class="text-xl font-medium mb-3 text-gray-600">${subcategoryName}`;
-                    
-                    // Add count to subcategory title if available
                     if (subcategoryData.count) {
                         subcategoryTitleHtml += `（共 ${subcategoryData.count} 字）`;
                     } else if (subcategoryData.ipa && !subcategoryName.includes(subcategoryData.ipa)) {
@@ -835,7 +820,6 @@
                     }
                     subcategoryTitleHtml += `</h3>`;
                     subcategoryDiv.innerHTML = subcategoryTitleHtml;
-
 
                     const subcategoryWordsGrid = document.createElement('div');
                     subcategoryWordsGrid.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-4', 'mb-6');
@@ -847,7 +831,6 @@
                     wordListContainer.appendChild(subcategoryDiv);
                 }
             }
-            // Scroll to top of word list when category changes
             if (main) {
                 main.scrollTop = 0;
             } else {
@@ -855,14 +838,12 @@
             }
         }
 
-        // Function to create a word element with a play button and translation
         function createWordElement(word) {
             const wordDiv = document.createElement('div');
             wordDiv.classList.add('word-item');
-            const ipa = getIpaForWord(word); // Get IPA for the word
-            // Ensure the displayed word is capitalized if it's "I"
+            const ipa = getIpaForWord(word);
             const displayWord = (word.toLowerCase() === 'i') ? 'I' : word;
-            const translation = wordTranslations[word.toLowerCase()] || ""; // Get Chinese translation, empty if none
+            const translation = wordTranslations[word.toLowerCase()] || "";
 
             wordDiv.innerHTML = `
                 <div class="word-item-content">
@@ -872,7 +853,6 @@
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.026A1 1 0 008 8v4a1 1 0 001.555.974l3.5-2a1 1 0 000-1.948l-3.5-2z" clip-rule="evenodd"></path>
                         </svg>
-                        <!-- No Chinese text here -->
                     </button>
                 </div>
             `;
@@ -880,55 +860,55 @@
             return wordDiv;
         }
 
-        // Function to play the pronunciation of a word using Web Speech API
+        // 🔊 改成使用 repo 裡的 .mp3 音檔，而不是 Web Speech API
         async function playWord(button) {
             const word = button.dataset.word;
-            const originalButtonContent = button.innerHTML; // Store original content (just SVG)
-            
-            // Check if Web Speech API is supported
-            if (!('speechSynthesis' in window)) {
-                showMessageBox('您的瀏覽器不支援語音合成功能。', true);
-                return;
+            const fileKey = word.toLowerCase(); // 檔名用小寫
+            const audioPath = `audio/${encodeURIComponent(fileKey)}.mp3`;
+            const originalButtonContent = button.innerHTML;
+
+            // 若有上一個音檔在播，先停掉
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
             }
 
             button.disabled = true;
-            button.innerHTML = '<div class="loading-spinner"></div>'; // Show loading spinner
+            button.innerHTML = '<div class="loading-spinner"></div>';
 
             try {
-                const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = 'en-US'; // Set language to American English
-                utterance.rate = 1.0;     // Normal speed
-                utterance.pitch = 1.0;    // Normal pitch
+                const audio = new Audio(audioPath);
+                currentAudio = audio;
 
-                utterance.onend = () => {
-                    button.innerHTML = originalButtonContent; // Restore original content
-                    button.disabled = false;
+                audio.onended = () => {
+                    if (button) {
+                        button.innerHTML = originalButtonContent;
+                        button.disabled = false;
+                    }
+                    currentAudio = null;
                 };
 
-                utterance.onerror = (event) => {
-                    console.error('SpeechSynthesisUtterance error:', event.error);
-                    showMessageBox(`播放「${word}」時發生錯誤：${event.error}。請確保您的瀏覽器有設定語音輸出。`, true);
-                    button.innerHTML = originalButtonContent; // Restore original content
+                audio.onerror = () => {
+                    showMessageBox(`找不到或無法播放音檔：${audioPath}`, true);
+                    button.innerHTML = originalButtonContent;
                     button.disabled = false;
+                    currentAudio = null;
                 };
 
-                window.speechSynthesis.speak(utterance);
-
+                await audio.play();
             } catch (error) {
-                console.error('Error playing word with Web Speech API:', error);
+                console.error('Error playing audio file:', error);
                 showMessageBox(`播放「${word}」時發生錯誤。請再試一次。`, true);
-                button.innerHTML = originalButtonContent; // Restore original content
+                button.innerHTML = originalButtonContent;
                 button.disabled = false;
+                currentAudio = null;
             }
         }
 
-        // Initialize the app when the window loads
         window.onload = function() {
-            // Assign the main element to the 'main' variable here
             main = document.getElementById('main');
-            
             loadCategories();
-            // Automatically select the first category for initial display
             const firstCategoryButton = categoryList.querySelector('button');
             if (firstCategoryButton) {
                 firstCategoryButton.click();
@@ -939,4 +919,3 @@
     </script>
 </body>
 </html>
-
